@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
 import javax.swing.RowFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
@@ -48,6 +49,7 @@ public class frmReporte extends javax.swing.JFrame {
             btnIngresos.setVisible(false);
             lbConsulta.setVisible(false);
             comboConsulta.setVisible(false);
+            btnFrecuencia.setVisible(false);
 
         }
 
@@ -55,30 +57,31 @@ public class frmReporte extends javax.swing.JFrame {
         setTitle("VitalVet");
         setResizable(true);
         txtFecha.setText("");
+        txtDocumento.setText("");
         tableModel = new DefaultTableModel();
         tableModel.setColumnIdentifiers(new String[]{"Fecha", "Paciente", "Documento-Cliente", "Cliente",
             "Veterinario", "TipoPaciente", "TipoConsulta",
             "Precio", "Observaciones"});
+
         tbReporte.setModel(tableModel);
 
         sorter = new TableRowSorter<>(tableModel);
         tbReporte.setRowSorter(sorter);
         mostrar();
 
-       
     }
+
     public void mostrar() {
         try {
-           
-            
+
             Connection connection = DriverManager.getConnection(con.getUrl(), con.getUsername(), con.getPassword());
 
             PreparedStatement statement = connection.prepareStatement("call MostrarConsultas()");
             ResultSet ps = statement.executeQuery();
             ResultSetMetaData metaData = ps.getMetaData();
+
             
-           
-             while (ps.next()) {
+            while (ps.next()) {
 
                 Object[] filas = new Object[metaData.getColumnCount()];
                 for (int i = 0; i < metaData.getColumnCount(); i++) {
@@ -86,24 +89,43 @@ public class frmReporte extends javax.swing.JFrame {
                 }
                 tableModel.addRow(filas);
             }
-            
+
             ps.close();
             statement.close();
             connection.close();
-            
+
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(rootPane, "Error en la consulta");
             System.out.println(ex);
-           
+
         }
-       
+
     }
 
-    
+    private void calcularIngresosFiltrados() {
+        double totalIngresosFiltrados = 0;
+        JTable tabla = tbReporte;
+
+        for (int i = 0; i < tabla.getRowCount(); i++) {
+
+            try {
+
+                String precioStr = tabla.getValueAt(i, 7).toString();
+                double precio = Double.parseDouble(precioStr);
+                totalIngresosFiltrados += precio;
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Error al leer el precio en la fila " + (i + 1), "Error de formato", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, "Total de ingresos con los filtros aplicados: $" + String.format("%.2f", totalIngresosFiltrados), "Total de Ingresos", JOptionPane.INFORMATION_MESSAGE);
+    }
 
     private void filtrarTabla() {
         String formatofecha = "yyyy-mm-DD";
         String fecha = txtFecha.getText().trim().toLowerCase();
+        String documento=txtDocumento.getText().trim().toLowerCase();
 
         if (!fecha.isEmpty()) {
             if (!isValidDate(fecha, formatofecha)) {
@@ -122,30 +144,31 @@ public class frmReporte extends javax.swing.JFrame {
             consultaB = true;
         }
 
-        // Crear un filtro combinado para fecha y veterinario
+
         RowFilter<DefaultTableModel, Object> filter = new RowFilter<DefaultTableModel, Object>() {
             @Override
             public boolean include(Entry<? extends DefaultTableModel, ? extends Object> entry) {
                 boolean coincideFecha = entry.getStringValue(0).toLowerCase().contains(fecha);
+                boolean coincideDocumento = documento.isEmpty() || entry.getStringValue(2).trim().equalsIgnoreCase(documento.trim());
                 boolean coincideVeterinario = veterinario.equals("Seleccione...") || entry.getStringValue(4).equals(veterinario);
                 boolean coincideConsulta = consulta.equals("Seleccione...") || entry.getStringValue(6).equals(consulta);
-                return coincideFecha && coincideVeterinario && coincideConsulta;
+                return coincideFecha && coincideVeterinario && coincideConsulta && coincideDocumento;
             }
         };
 
         sorter.setRowFilter(filter);
         if (sorter.getViewRowCount() == 0) {
-            if (veterinarioB && consultaB ) {
+            if (veterinarioB && consultaB) {
                 JOptionPane.showMessageDialog(this,
-                        "Campos no encontrados No Existen consultas en la fecha selecionada("
-                        + fecha + ")", "Sin resultados", JOptionPane.INFORMATION_MESSAGE);
+                        "Campos no encontrados", "Sin resultados", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Campos no encontrados El/La " + veterinario + " No tiene consultas en la fecha selecionada("
-                        + fecha + ")", "Sin resultados", JOptionPane.INFORMATION_MESSAGE);
+                        "Campos no encontrados",
+                         "Sin resultados", JOptionPane.INFORMATION_MESSAGE);
             }
 
             txtFecha.setText("");
+            txtDocumento.setText("");
             comboVeterinario.setSelectedIndex(0);
             comboConsulta.setSelectedIndex(0);
             filtrarTabla();
@@ -185,8 +208,16 @@ public class frmReporte extends javax.swing.JFrame {
         lbConsulta = new javax.swing.JLabel();
         btnIngresos = new javax.swing.JButton();
         comboConsulta = new javax.swing.JComboBox<>();
+        btnFrecuencia = new javax.swing.JButton();
+        jLabel4 = new javax.swing.JLabel();
+        txtDocumento = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentShown(java.awt.event.ComponentEvent evt) {
+                formComponentShown(evt);
+            }
+        });
 
         tbReporte.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -229,8 +260,24 @@ public class frmReporte extends javax.swing.JFrame {
         lbConsulta.setText("Consulta");
 
         btnIngresos.setText("Reporte ingresos");
+        btnIngresos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnIngresosActionPerformed(evt);
+            }
+        });
 
         comboConsulta.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Seleccione...", "Consulta de Rutina", "Consulta de Diagnóstico", "Consulta de Especialidad", "Consulta Preventiva", "Hospitalización", "Peluquería", "Adiestramiento" }));
+
+        btnFrecuencia.setText("Reporte Frecuencia");
+        btnFrecuencia.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFrecuenciaActionPerformed(evt);
+            }
+        });
+
+        jLabel4.setText("Documento");
+
+        txtDocumento.setText("jTextField1");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -246,7 +293,7 @@ public class frmReporte extends javax.swing.JFrame {
                                 .addGap(221, 221, 221)
                                 .addComponent(lblUser)
                                 .addGap(0, 0, Short.MAX_VALUE))
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 678, Short.MAX_VALUE))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 710, Short.MAX_VALUE))
                         .addContainerGap())
                     .addGroup(layout.createSequentialGroup()
                         .addGap(6, 6, 6)
@@ -266,8 +313,14 @@ public class frmReporte extends javax.swing.JFrame {
                                 .addGap(61, 61, 61)
                                 .addComponent(btnBuscar)
                                 .addGap(18, 18, 18)
-                                .addComponent(btnIngresos)))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                                .addComponent(btnIngresos)
+                                .addGap(18, 18, 18)
+                                .addComponent(btnFrecuencia))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel4)
+                                .addGap(18, 18, 18)
+                                .addComponent(txtDocumento, javax.swing.GroupLayout.PREFERRED_SIZE, 119, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addContainerGap(36, Short.MAX_VALUE))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -286,12 +339,17 @@ public class frmReporte extends javax.swing.JFrame {
                         .addComponent(comboConsulta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(txtDocumento, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(comboVeterinario, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3)
                     .addComponent(btnBuscar)
-                    .addComponent(btnIngresos))
+                    .addComponent(btnIngresos)
+                    .addComponent(btnFrecuencia))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 239, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 296, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -306,6 +364,29 @@ public class frmReporte extends javax.swing.JFrame {
 
 
     }//GEN-LAST:event_comboVeterinarioActionPerformed
+
+    private void btnIngresosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIngresosActionPerformed
+        // TODO add your handling code here:
+        filtrarTabla();
+        calcularIngresosFiltrados();
+
+
+    }//GEN-LAST:event_btnIngresosActionPerformed
+
+    private void formComponentShown(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentShown
+        // TODO add your handling code here:
+        tableModel.setRowCount(0);
+        mostrar();
+        
+    }//GEN-LAST:event_formComponentShown
+
+    private void btnFrecuenciaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFrecuenciaActionPerformed
+        // TODO add your handling code here:
+        
+        
+        frmFrecuencias fe = new frmFrecuencias();
+        fe.setVisible(true);
+    }//GEN-LAST:event_btnFrecuenciaActionPerformed
 
     /**
      * @param args the command line arguments
@@ -344,16 +425,19 @@ public class frmReporte extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnBuscar;
+    private javax.swing.JButton btnFrecuencia;
     private javax.swing.JButton btnIngresos;
     private javax.swing.JComboBox<String> comboConsulta;
     private javax.swing.JComboBox<String> comboVeterinario;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel lbConsulta;
     private javax.swing.JLabel lblUser;
     private javax.swing.JTable tbReporte;
+    private javax.swing.JTextField txtDocumento;
     private javax.swing.JTextField txtFecha;
     // End of variables declaration//GEN-END:variables
 

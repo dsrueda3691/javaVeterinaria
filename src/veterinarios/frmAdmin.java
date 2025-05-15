@@ -4,6 +4,15 @@
  */
 package veterinarios;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
 /**
  *
  * @author jcami
@@ -15,19 +24,66 @@ public class frmAdmin extends javax.swing.JFrame {
      */
     Veterinaria1 ve;
     frmLogin login;
+    frmReporte re;
     String user;
     int iduser;
     int idprofile;
+    infoConexion con;
+    DefaultTableModel tableModel;
 
     public frmAdmin(String user, int iduser, int idprofile) {
         initComponents();
+        
+        con = new infoConexion();
         this.user = user;
         this.iduser = iduser;
         this.idprofile = idprofile;
         ve = new Veterinaria1(user, iduser, idprofile);
+        re=new frmReporte(user, iduser, idprofile);
         setTitle("Admin");
+        
+        tableModel =new DefaultTableModel();
+                
+        tableModel.setColumnIdentifiers(new String[]{"id", "usuario", "password", "idRol","ROL"});
+
+        tbUsuarios.setModel(tableModel);
+        ptabla.setVisible(false);
+        setSize(450,160);
 
         setResizable(false);
+    }
+    
+    public void mostrar(){
+    
+     try {
+
+            Connection connection = DriverManager.getConnection(con.getUrl(), con.getUsername(), con.getPassword());
+
+            PreparedStatement statement = connection.prepareStatement("call LeerUsuarios()");
+            ResultSet ps = statement.executeQuery();
+            ResultSetMetaData metaData = ps.getMetaData();
+
+            
+            while (ps.next()) {
+
+                Object[] filas = new Object[metaData.getColumnCount()];
+                for (int i = 0; i < metaData.getColumnCount(); i++) {
+                    filas[i] = ps.getObject(i + 1);
+                }
+                tableModel.addRow(filas);
+            }
+
+            ps.close();
+            statement.close();
+            connection.close();
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(rootPane, "Error en la consulta");
+            System.out.println(ex);
+
+        }
+
+    
     }
 
     /**
@@ -43,6 +99,9 @@ public class frmAdmin extends javax.swing.JFrame {
         btnReporte = new javax.swing.JButton();
         btnUsuarios = new javax.swing.JButton();
         btnInsert = new javax.swing.JButton();
+        ptabla = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tbUsuarios = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -55,8 +114,18 @@ public class frmAdmin extends javax.swing.JFrame {
         jLabel1.setText("VitalVet-ADMIN");
 
         btnReporte.setText("Reporte");
+        btnReporte.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnReporteActionPerformed(evt);
+            }
+        });
 
         btnUsuarios.setText("Usuarios");
+        btnUsuarios.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUsuariosActionPerformed(evt);
+            }
+        });
 
         btnInsert.setText("Insertar Consultas");
         btnInsert.addActionListener(new java.awt.event.ActionListener() {
@@ -65,6 +134,32 @@ public class frmAdmin extends javax.swing.JFrame {
             }
         });
 
+        tbUsuarios.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane1.setViewportView(tbUsuarios);
+
+        javax.swing.GroupLayout ptablaLayout = new javax.swing.GroupLayout(ptabla);
+        ptabla.setLayout(ptablaLayout);
+        ptablaLayout.setHorizontalGroup(
+            ptablaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane1)
+        );
+        ptablaLayout.setVerticalGroup(
+            ptablaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, ptablaLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 479, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -72,16 +167,20 @@ public class frmAdmin extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(26, 26, 26)
-                        .addComponent(jLabel1))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(38, 38, 38)
-                        .addComponent(btnReporte)
-                        .addGap(44, 44, 44)
-                        .addComponent(btnUsuarios)
-                        .addGap(39, 39, 39)
-                        .addComponent(btnInsert)))
-                .addContainerGap(50, Short.MAX_VALUE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(26, 26, 26)
+                                .addComponent(jLabel1))
+                            .addGroup(layout.createSequentialGroup()
+                                .addGap(38, 38, 38)
+                                .addComponent(btnReporte)
+                                .addGap(44, 44, 44)
+                                .addComponent(btnUsuarios)
+                                .addGap(39, 39, 39)
+                                .addComponent(btnInsert)))
+                        .addGap(0, 106, Short.MAX_VALUE))
+                    .addComponent(ptabla, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -93,7 +192,9 @@ public class frmAdmin extends javax.swing.JFrame {
                     .addComponent(btnReporte)
                     .addComponent(btnUsuarios)
                     .addComponent(btnInsert))
-                .addContainerGap(23, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(ptabla, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         pack();
@@ -113,6 +214,19 @@ public class frmAdmin extends javax.swing.JFrame {
         login.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_formWindowClosed
+
+    private void btnReporteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReporteActionPerformed
+        // TODO add your handling code here:
+        re.setVisible(true);
+    }//GEN-LAST:event_btnReporteActionPerformed
+
+    private void btnUsuariosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUsuariosActionPerformed
+        // TODO add your handling code here:
+        
+       setSize(504,340);
+        ptabla.setVisible(true);
+        mostrar();
+    }//GEN-LAST:event_btnUsuariosActionPerformed
 
     /**
      * @param args the command line arguments
@@ -154,5 +268,8 @@ public class frmAdmin extends javax.swing.JFrame {
     private javax.swing.JButton btnReporte;
     private javax.swing.JButton btnUsuarios;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JPanel ptabla;
+    private javax.swing.JTable tbUsuarios;
     // End of variables declaration//GEN-END:variables
 }

@@ -366,6 +366,7 @@ public class Veterinaria1 extends javax.swing.JFrame {
 
             stmt.close();
             connection.close();
+           
             JOptionPane.showMessageDialog(rootPane, "Guardado con exito");
         } catch (SQLException ex) {
 

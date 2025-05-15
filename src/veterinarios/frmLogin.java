@@ -4,6 +4,11 @@
  */
 package veterinarios;
 
+import com.mysql.cj.jdbc.CallableStatement;
+import com.sun.jdi.connect.spi.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 
@@ -17,10 +22,13 @@ public class frmLogin extends javax.swing.JFrame {
      * Creates new form frmLogin
      */
     ArrayList<Usuario> listaUsuario;
+    infoConexion con;
+    
 
     public frmLogin() {
 
         initComponents();
+        con = new infoConexion();
         listaUsuario = new ArrayList<>() {
             {
                 add(new Usuario(1, "LGARCIA", "123", 1));
@@ -36,8 +44,44 @@ public class frmLogin extends javax.swing.JFrame {
         setResizable(false);
         txtContrañesa.setText("");
         txtUsuario.setText("");
-
+        guardarUsuariosInicialesEnBD();
     }
+    
+    
+    public void guardarUsuariosInicialesEnBD() {
+        
+         try {
+
+            java.sql.Connection connection = DriverManager.getConnection(con.getUrl(),
+                    con.getUsername(), con.getPassword());
+            PreparedStatement stmt = connection.prepareStatement("CALL InsertarUsuario(?, ?, ?)");
+
+             for (int i = 0; i < listaUsuario.size(); i++) {
+                 stmt.setString(1, listaUsuario.get(i).getUser());
+                stmt.setString(2, listaUsuario.get(i).getContraseña());
+                stmt.setInt(3, listaUsuario.get(i).getIdProfile());
+                stmt.executeUpdate();
+                 
+             }
+               
+            
+
+            stmt.executeUpdate();
+
+            stmt.close();
+            connection.close();
+           
+            
+        } catch (SQLException ex) {
+
+            System.out.println(ex);
+            JOptionPane.showMessageDialog(rootPane, "Error");
+        }
+
+        
+    }
+
+    
 
     /**
      * This method is called from within the constructor to initialize the form.
