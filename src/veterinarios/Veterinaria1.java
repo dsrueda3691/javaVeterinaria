@@ -54,10 +54,11 @@ public class Veterinaria1 extends javax.swing.JFrame {
                 add(new Consultas("Consulta de Rutina", 90000.0));
                 add(new Consultas("Consulta de Diagnostico", 150000.0));
                 add(new Consultas("Consulta de Especialidad", 300000.0));
+                add(new Consultas("Consulta Preventiva", 70000.0));
                 add(new Consultas("Hospitalizacion", 400000.0));
                 add(new Consultas("Peluqueria y Baño", 60000.0));
                 add(new Consultas("Adiestramiento", 110000.0));
-                add(new Consultas("Preventiva", 70000.0));
+                
             }
         };
         listadoPacientes = new ArrayList<>() {

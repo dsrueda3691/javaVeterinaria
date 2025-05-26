@@ -34,6 +34,7 @@ public class frmReporte extends javax.swing.JFrame {
     String user;
     int idUser;
     int idProfile;
+    
 
     public frmReporte(String user, int iduser, int idprofile) {
         initComponents();
@@ -118,20 +119,21 @@ public class frmReporte extends javax.swing.JFrame {
                 return;
             }
         }
+                JOptionPane.showMessageDialog(this, "Total de ingresos con los filtros aplicados: $" + String.format("%.2f", totalIngresosFiltrados), "Total de Ingresos", JOptionPane.INFORMATION_MESSAGE);
 
-        JOptionPane.showMessageDialog(this, "Total de ingresos con los filtros aplicados: $" + String.format("%.2f", totalIngresosFiltrados), "Total de Ingresos", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void filtrarTabla() {
         String formatofecha = "yyyy-mm-DD";
         String fecha = txtFecha.getText().trim().toLowerCase();
         String documento=txtDocumento.getText().trim().toLowerCase();
+        
 
         if (!fecha.isEmpty()) {
             if (!isValidDate(fecha, formatofecha)) {
                 JOptionPane.showMessageDialog(this, "Fecha inválida. Ingrese una fecha válida en formato yyyy-mm-DD.", "Error", JOptionPane.INFORMATION_MESSAGE);
                 txtFecha.setText("");
-                return; // Detener el filtrado si la fecha es inválida
+                return; 
             }
         }
 
@@ -161,10 +163,12 @@ public class frmReporte extends javax.swing.JFrame {
             if (veterinarioB && consultaB) {
                 JOptionPane.showMessageDialog(this,
                         "Campos no encontrados", "Sin resultados", JOptionPane.INFORMATION_MESSAGE);
+                
             } else {
                 JOptionPane.showMessageDialog(this,
                         "Campos no encontrados",
                          "Sin resultados", JOptionPane.INFORMATION_MESSAGE);
+                
             }
 
             txtFecha.setText("");
@@ -172,18 +176,19 @@ public class frmReporte extends javax.swing.JFrame {
             comboVeterinario.setSelectedIndex(0);
             comboConsulta.setSelectedIndex(0);
             filtrarTabla();
+            
         }
 
     }
 
     public static boolean isValidDate(String dateStr, String format) {
         SimpleDateFormat sdf = new SimpleDateFormat(format);
-        sdf.setLenient(false); // No permitir fechas inválidas (como 30/02/2024)
+        sdf.setLenient(false); 
         try {
-            Date date = sdf.parse(dateStr); // Intenta parsear la fecha
-            return true; // Si no hay excepción, la fecha es válida
+            Date date = sdf.parse(dateStr); 
+            return true; 
         } catch (ParseException e) {
-            return false; // Si hay excepción, la fecha es inválida
+            return false; 
         }
     }
 
@@ -368,7 +373,11 @@ public class frmReporte extends javax.swing.JFrame {
     private void btnIngresosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnIngresosActionPerformed
         // TODO add your handling code here:
         filtrarTabla();
+        
+           
         calcularIngresosFiltrados();
+        
+        
 
 
     }//GEN-LAST:event_btnIngresosActionPerformed

@@ -54,7 +54,7 @@ public class frmFrecuencias extends javax.swing.JFrame {
             public boolean include(RowFilter.Entry<? extends DefaultTableModel, ? extends Object> entry) {
                 String valorTabla = entry.getStringValue(0).trim().toLowerCase();
                 String consulta = comboTratamientos.getSelectedItem().toString().trim().toLowerCase();
-                System.out.println("Valor en tabla (Tipo Animal): " + valorTabla + ", Consulta (Combo): " + consulta);
+             
                 boolean coincideConsulta = consulta.equals("seleccione...") || valorTabla.equals(consulta);
                 return coincideConsulta;
             }

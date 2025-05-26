@@ -4,13 +4,13 @@
  */
 package veterinarios;
 
-import com.mysql.cj.jdbc.CallableStatement;
-import com.sun.jdi.connect.spi.Connection;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
+import java.sql.ResultSet;
 
 /**
  *
@@ -21,67 +21,70 @@ public class frmLogin extends javax.swing.JFrame {
     /**
      * Creates new form frmLogin
      */
-    ArrayList<Usuario> listaUsuario;
+    public ArrayList<Usuario> listaUsuario;
     infoConexion con;
-    
 
     public frmLogin() {
 
         initComponents();
         con = new infoConexion();
-        listaUsuario = new ArrayList<>() {
-            {
-                add(new Usuario(1, "LGARCIA", "123", 1));
-                add(new Usuario(2, "DRUEDAM", "3691", 1));
-                add(new Usuario(3, "AORTIZ", "456", 2));
-                add(new Usuario(4, "YSOFI", "0321", 2));
-
-            }
-        };
+        listaUsuario = new ArrayList<>();
 
         setTitle("Login");
 
         setResizable(false);
         txtContrañesa.setText("");
         txtUsuario.setText("");
-        guardarUsuariosInicialesEnBD();
+        cargarUsuariosDesdeBD();
     }
-    
-    
-    public void guardarUsuariosInicialesEnBD() {
-        
-         try {
 
-            java.sql.Connection connection = DriverManager.getConnection(con.getUrl(),
-                    con.getUsername(), con.getPassword());
-            PreparedStatement stmt = connection.prepareStatement("CALL InsertarUsuario(?, ?, ?)");
+    public void cargarUsuariosDesdeBD() {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet rs = null;
 
-             for (int i = 0; i < listaUsuario.size(); i++) {
-                 stmt.setString(1, listaUsuario.get(i).getUser());
-                stmt.setString(2, listaUsuario.get(i).getContraseña());
-                stmt.setInt(3, listaUsuario.get(i).getIdProfile());
-                stmt.executeUpdate();
-                 
-             }
-               
-            
+        listaUsuario.clear();
 
-            stmt.executeUpdate();
+        try {
 
-            stmt.close();
-            connection.close();
-           
-            
+            connection = DriverManager.getConnection(con.getUrl(), con.getUsername(), con.getPassword());
+            statement = connection.prepareStatement("call LeerUsuarios()");
+
+            rs = statement.executeQuery();
+
+            while (rs.next()) {
+
+                int id = rs.getInt("Id");
+                String user = rs.getString("Usuario");
+                String pass = rs.getString("Password");
+                int idRol = rs.getInt("IdRol");
+
+                listaUsuario.add(new Usuario(id, user, pass, idRol));
+            }
+            System.out.println("Usuarios cargados desde la BD usando SP 'LeerUsuarios'. Total: " + listaUsuario.size() + " usuarios.");
+
         } catch (SQLException ex) {
+            System.err.println("Error al cargar usuarios desde la BD: " + ex.getMessage());
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al cargar usuarios de la base de datos.", "Error de BD", JOptionPane.ERROR_MESSAGE);
+        } finally {
 
-            System.out.println(ex);
-            JOptionPane.showMessageDialog(rootPane, "Error");
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (statement != null) {
+                    statement.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException ex) {
+                System.err.println("Error al cerrar recursos de la BD: " + ex.getMessage());
+                ex.printStackTrace();
+            }
         }
-
-        
     }
-
-    
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -166,38 +169,48 @@ public class frmLogin extends javax.swing.JFrame {
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         String user = txtUsuario.getText().replace(" ", "").toUpperCase();
         String contraseña = String.valueOf(txtContrañesa.getPassword());
-        int id = 0, profile = 0;
 
-        for (int i = 0; i < listaUsuario.size(); i++) {
-            if (listaUsuario.get(i).getUser().equals(user.toUpperCase())
-                    && listaUsuario.get(i).getContraseña().equals(contraseña)) {
-                id = listaUsuario.get(i).getId();
-                profile = listaUsuario.get(i).getIdProfile();
-            }
-
+        if (user.isEmpty() || contraseña.isEmpty()) {
+            JOptionPane.showMessageDialog(rootPane,
+                    "Por favor, ingrese usuario y contraseña.",
+                    "Campos Vacíos", JOptionPane.WARNING_MESSAGE);
+            txtContrañesa.setText("");
+            txtUsuario.setText("");
+            return;
         }
-        if (id != 0) {
+
+        int id = 0;
+        int profile = 0;
+        boolean encontrado = false;
+
+        for (Usuario u : listaUsuario) {
+            if (u.getUser().equals(user) && u.getContraseña().equals(contraseña)) {
+                id = u.getId();
+                profile = u.getIdProfile();
+                encontrado = true;
+                break;
+            }
+        }
+
+        if (encontrado) {
+           
             if (profile == 2) {
                 Veterinaria1 inicio = new Veterinaria1(user, id, profile);
                 inicio.setVisible(true);
                 this.dispose();
             } else {
-                 frmAdmin admin = new frmAdmin(user, id, profile);
+                frmAdmin admin = new frmAdmin(user, id, profile);
                 admin.setVisible(true);
                 this.dispose();
             }
         } else {
-
             JOptionPane.showMessageDialog(rootPane,
                     "Error de usuario y/o Contraseña",
-                    "Error", JOptionPane.ERROR_MESSAGE);
-
+                    "Error de Login", JOptionPane.ERROR_MESSAGE);
         }
 
         txtContrañesa.setText("");
         txtUsuario.setText("");
-
-
     }//GEN-LAST:event_btnLoginActionPerformed
 
     /**
